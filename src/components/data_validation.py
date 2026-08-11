@@ -15,6 +15,22 @@ class DataTransformationConfig:
     MISSING_COLS = field(default_factory=list)
     VALIDATION_REPORT = field(default_factory=dict)
     TARGET_VARIABLE : str = 'Machine failure'
+    EXPECTED_DTYPES = field(default_factory=lambda:{
+    "UDI": "int64",
+    "Product ID": "object",
+    "Type": "object",
+    "Air temperature [K]": "float64",
+    "Process temperature [K]": "float64",
+    "Rotational speed [rpm]": "int64",
+    "Torque [Nm]": "float64",
+    "Tool wear [min]": "int64",
+    "Machine failure": "int64",
+    "TWF": "int64",
+    "HDF": "int64",
+    "PWF": "int64",
+    "OSF": "int64",
+    "RNF": "int64"
+})
 
 class DataTranformation:
     def __int__(self):
@@ -53,6 +69,29 @@ class DataTranformation:
             else:
                 logging.info('Target variable exists')
                 return True
+        except Exception as e:
+            logging.info(f'Exception Occured : {e}')
+            raise CustomMachineLearningException(e,sys)
+
+
+    def data_type_validation(self , df:pd.DataFrame)->dict:
+        try:
+            data_type_errors = {}
+            for column_name , expected_dtype in self.data_tranformation_config.EXPECTED_DTYPES.items():
+                if column_name not in df.columns:
+                    continue
+                actual_dtype = str(df[column_name].dtype)
+                if actual_dtype != expected_dtype:
+                    data_type_errors[column_name]={
+                        'expected_dtype':expected_dtype,
+                        'actual_dtype':actual_dtype
+                    }
+
+                if(len(data_type_errors)==0):logging.info('All data types are correct')
+
+            return data_type_errors
+
+
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
@@ -111,7 +150,20 @@ class DataTranformation:
             logging.info('Target validation completed successfully')
 
 
-            
+            logging.info('Checking for the data types validation')
+            train_dtypes_validation = self.data_type_validation(train_df)
+            test_dtypes_validation = self.data_type_validation(test_df)
+
+            if(len(train_dtypes_validation)and len(test_dtypes_validation)==0):
+                self.data_tranformation_config.VALIDATION_REPORT['DataType_Validation'] = True
+            else:
+                self.data_tranformation_config.VALIDATION_REPORT['DataType_Validation'] = {
+                                'Train_df': train_dtypes_validation,
+                                'Test_df': test_dtypes_validation,
+                            }
+            logging.info('Data type validation validation completed successfully')
+
+
 
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
