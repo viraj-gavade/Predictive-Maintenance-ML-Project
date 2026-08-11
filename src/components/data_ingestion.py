@@ -21,7 +21,7 @@ class DataIngestion:
 
     def initiate_data_ingestion(self):
         try:
-            logging.info('***** Initiate Data Ingestion Pipeline *****')
+            logging.info('***** PHASE 1 - Initiate Data Ingestion Pipeline *****')
             logging.info('Loading the data from the source')
             df = pd.read_csv('data\\ai4i2020.csv')
             logging.info('DataSet Loaded successfully !')
@@ -48,7 +48,7 @@ class DataIngestion:
             df.to_csv(self.data_ingestion_config.test_data_path,index=False)
             logging.info('Test data saved to artifcats folder successfully')
 
-            logging.info('***** Data Ingestion Pipeline completed Successfully *****')
+            logging.info('*****  PHASE 1 - Data Ingestion Pipeline completed Successfully *****')
             return(
                 self.data_ingestion_config.train_data_path,
                 self.data_ingestion_config.test_data_path,
