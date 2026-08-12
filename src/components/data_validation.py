@@ -117,6 +117,20 @@ class DataTranformation:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
 
+
+    def category_validation(self , df:pd.DataFrame)->bool:
+        try:
+            logging.info('Validating the catgoeries')
+            valid_types = ['M' 'L' 'H']
+            if(set(df['M' 'L' 'H'].unique()).issubset(set(valid_types))):
+                logging.info('All Types are valid')
+                return True
+            else:
+                logging.info('Invalid types found!')
+                return False
+        except Exception as e:
+            logging.info(f'Exception Occured : {e}')
+            raise CustomMachineLearningException(e,sys)
     def initiate_data_validation(self, train_path:str , test_path:str)->dict:
         try:
             logging.info('***** PHASE 2 - Initiate Data Validation Pipeline *****')
@@ -210,6 +224,21 @@ class DataTranformation:
                                 'Test_df': test_duplicates,
                             }
             logging.info('Duplicate  values checked successfully!')
+
+
+            logging.info('Checking the category validation on train and test data')
+            is_train_category_valid = self.category_validation(train_df)
+            is_test_category_valid = self.category_validation(test_df)
+            if(is_train_category_valid and is_test_category_valid == True):
+                self.data_tranformation_config.VALIDATION_REPORT['Valid_Categories'] = True
+            else:
+                self.data_tranformation_config.VALIDATION_REPORT['Valid_Categories'] = {
+                                                'Train_df': is_train_category_valid,
+                                                'Test_df': is_test_category_valid,
+                                            }
+            logging.info('Category validation completed successfully on train and test data')
+            
+
 
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
