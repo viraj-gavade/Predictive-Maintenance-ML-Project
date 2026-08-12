@@ -6,49 +6,76 @@ import sys
 import pandas as pd
 from pydantic import BaseModel
 from typing import Dict , List
+from typing import ClassVar
+
 
 class ValidationReportSchema(BaseModel):
-    validation_status : bool
-    Expected_Columns : bool | Dict[str,Dict[str,List[str]]]
-    No_UnExpected_Columns :bool | Dict[str,Dict[str,List[str]]]
-    Target_Validation:bool | Dict[str,Dict[str,bool]]
-    DataType_Validation : bool | Dict[str,Dict[str,str]]
-    No_Missing_Values : bool | Dict[str,Dict[str,int]]
-    No_Duplicates : bool | Dict[str,int]
-    Valid_Categories : bool | Dict[str,bool]
-    Range_Validation : bool | Dict[str,bool]
+    validation_status: bool
+
+    Expected_Columns: bool | Dict[str, List[str]]
+    No_UnExpected_Columns: bool | Dict[str, List[str]]
+
+    Target_Validation: bool | Dict[str, Dict[str, bool]]
+    DataType_Validation: bool | Dict[str, Dict[str, str]]
+    No_Missing_Values: bool | Dict[str, Dict[str, int]]
+    No_Duplicates: bool | Dict[str, int]
+    Valid_Categories: bool | Dict[str, bool]
+    Range_Validation: bool | Dict[str, bool]
 
 
 
-@dataclass 
+from dataclasses import dataclass, field
+from typing import ClassVar, Dict
+
+
+@dataclass
 class DataValidationConfig:
-    EXPECTED_COLS = field(default_factory=lambda:[
-        'UDI','Product ID','Type','Air temperature [K]','Process temperature [K]','Rotational speed [rpm]','Torque [Nm]','Tool wear [min]',
-        'Machine failure','TWF','HDF','PWF','OSF','RNF'
-    ])
-    UNEXPECTED_COLS = field(default_factory=list)
-    MISSING_COLS = field(default_factory=list)
-    VALIDATION_REPORT = field(default_factory=dict)
-    TARGET_VARIABLE : str = 'Machine failure'
-    EXPECTED_DTYPES = field(default_factory=lambda:{
-    "UDI": "int64",
-    "Product ID": "object",
-    "Type": "object",
-    "Air temperature [K]": "float64",
-    "Process temperature [K]": "float64",
-    "Rotational speed [rpm]": "int64",
-    "Torque [Nm]": "float64",
-    "Tool wear [min]": "int64",
-    "Machine failure": "int64",
-    "TWF": "int64",
-    "HDF": "int64",
-    "PWF": "int64",
-    "OSF": "int64",
-    "RNF": "int64"
-})
+    EXPECTED_COLS: ClassVar[list[str]] = [
+        'UDI',
+        'Product ID',
+        'Type',
+        'Air temperature [K]',
+        'Process temperature [K]',
+        'Rotational speed [rpm]',
+        'Torque [Nm]',
+        'Tool wear [min]',
+        'Machine failure',
+        'TWF',
+        'HDF',
+        'PWF',
+        'OSF',
+        'RNF'
+    ]
+
+    UNEXPECTED_COLS: list[str] = field(default_factory=list)
+
+    MISSING_COLS: list[str] = field(default_factory=list)
+
+    VALIDATION_REPORT: dict = field(default_factory=dict)
+
+    VALIDATION_REPORT_PATH : str = os.path.join('reports','validation_report.json')
+
+    TARGET_VARIABLE: str = 'Machine failure'
+
+    EXPECTED_DTYPES: ClassVar[Dict[str, str]] = {
+        "UDI": "int64",
+        "Product ID": "object",
+        "Type": "object",
+        "Air temperature [K]": "float64",
+        "Process temperature [K]": "float64",
+        "Rotational speed [rpm]": "int64",
+        "Torque [Nm]": "float64",
+        "Tool wear [min]": "int64",
+        "Machine failure": "int64",
+        "TWF": "int64",
+        "HDF": "int64",
+        "PWF": "int64",
+        "OSF": "int64",
+        "RNF": "int64"
+    }
 
 class DataValidation:
-    def __int__(self):
+    def __init__(self):
         self.data_validation_config = DataValidationConfig()
 
     def check_expected_cols(self , df : pd.DataFrame )->list:
@@ -56,8 +83,8 @@ class DataValidation:
             for col in self.data_validation_config.EXPECTED_COLS:
                 if(col not in df.columns):
                     self.data_validation_config.MISSING_COLS.append(col)
-                else:
-                    logging.info('All columns are present')
+                
+            logging.info('All columns are present')
             return self.data_validation_config.MISSING_COLS
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
@@ -69,8 +96,8 @@ class DataValidation:
             for col in df.columns:
                 if(col not in self.data_validation_config.EXPECTED_COLS):
                     self.data_validation_config.UNEXPECTED_COLS.append(col)
-                else:
-                    logging.info('No unexpected columns present')
+                
+            logging.info('No unexpected columns present')
             return self.data_validation_config.UNEXPECTED_COLS
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
@@ -136,8 +163,8 @@ class DataValidation:
     def category_validation(self , df:pd.DataFrame)->bool:
         try:
             logging.info('Validating the catgoeries')
-            valid_types = ['M' 'L' 'H']
-            if(set(df['M' 'L' 'H'].unique()).issubset(set(valid_types))):
+            valid_types = ['M' ,'L', 'H']
+            if(set(df['Type'].unique()).issubset(set(valid_types))):
                 logging.info('All Types are valid')
                 return True
             else:
@@ -185,7 +212,7 @@ class DataValidation:
             logging.info('Checking the missing columns for the test dataset')
             test_missing_cols = self.check_expected_cols(test_df)
 
-            if(len(train_missing_cols)and len(test_missing_cols)==0):
+            if(len(train_missing_cols)== 0 and len(test_missing_cols)==0):
                 self.data_validation_config.VALIDATION_REPORT['Expected_Columns'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['Expected_Columns'] = {
@@ -202,7 +229,7 @@ class DataValidation:
             logging.info('Checking the unexpected columns for the test dataset')
             test_unexpected_cols = self.check_unexpected_cols(test_df)
 
-            if(len(train_unexpected_cols)and len(test_unexpected_cols)==0):
+            if(len(train_unexpected_cols)== 0 and len(test_unexpected_cols)==0):
                 self.data_validation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = {
@@ -229,7 +256,7 @@ class DataValidation:
             train_dtypes_validation = self.data_type_validation(train_df)
             test_dtypes_validation = self.data_type_validation(test_df)
 
-            if(len(train_dtypes_validation)and len(test_dtypes_validation)==0):
+            if(len(train_dtypes_validation)==0 and len(test_dtypes_validation)==0):
                 self.data_validation_config.VALIDATION_REPORT['DataType_Validation'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['DataType_Validation'] = {
@@ -242,7 +269,7 @@ class DataValidation:
             train_missing_vals = self.check_missing_values(train_df)
             test_missing_vals = self.check_missing_values(test_df)
     
-            if(len(train_missing_vals)and len(test_missing_vals)==0):
+            if(len(train_missing_vals)==0  and  len(test_missing_vals)==0):
                 self.data_validation_config.VALIDATION_REPORT['No_Missing_Values'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['No_Missing_Values'] = {
@@ -256,7 +283,7 @@ class DataValidation:
             train_duplicates = self.check_duplicate_records(train_df)
             test_duplicates = self.check_duplicate_records(test_df)
     
-            if(train_duplicates and  test_duplicates==0):
+            if(train_duplicates==0  and  test_duplicates==0):
                 self.data_validation_config.VALIDATION_REPORT['No_Duplicates'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['No_Duplicates'] = {
@@ -269,7 +296,7 @@ class DataValidation:
             logging.info('Checking the category validation on train and test data')
             is_train_category_valid = self.category_validation(train_df)
             is_test_category_valid = self.category_validation(test_df)
-            if(is_train_category_valid and is_test_category_valid == True):
+            if(is_train_category_valid==True and is_test_category_valid == True):
                 self.data_validation_config.VALIDATION_REPORT['Valid_Categories'] = True
             else:
                 self.data_validation_config.VALIDATION_REPORT['Valid_Categories'] = {
@@ -297,10 +324,10 @@ class DataValidation:
             if False in  self.data_validation_config.VALIDATION_REPORT:
                 self.data_validation_config.VALIDATION_REPORT['VALIDATION_STATUS'] = False
             else:
-                self.data_validation_config.VALIDATION_REPORT['VALIDATION_STATUS'] = False
+                self.data_validation_config.VALIDATION_REPORT['VALIDATION_STATUS'] = True
 
             report = ValidationReportSchema(
-                validation_status=self.data_validation_config.VALIDATION_REPORT["validation_status"],
+                validation_status=self.data_validation_config.VALIDATION_REPORT["VALIDATION_STATUS"],
                 Expected_Columns=self.data_validation_config.VALIDATION_REPORT["Expected_Columns"],
                 No_UnExpected_Columns=self.data_validation_config.VALIDATION_REPORT["No_UnExpected_Columns"],
                 Target_Validation=self.data_validation_config.VALIDATION_REPORT["Target_Validation"],
@@ -315,18 +342,18 @@ class DataValidation:
 
             os.makedirs(
                 os.path.dirname(
-                    self.data_validation_config.VALIDATION_REPORT
+                    self.data_validation_config.VALIDATION_REPORT_PATH
                 ),
                 exist_ok=True
             )
 
             logging.info(
                 f"Saving the validation report to the path: "
-                f"{self.data_validation_config.VALIDATION_REPORT}"
+                f"{self.data_validation_config.VALIDATION_REPORT_PATH}"
             )
 
             with open(
-                self.data_validation_config.VALIDATION_REPORT,
+                self.data_validation_config.VALIDATION_REPORT_PATH,
                 "w"
             ) as f:
                 f.write(report.model_dump_json(indent=4))
@@ -337,7 +364,7 @@ class DataValidation:
                 train_df,
                 test_df,
                 self.data_validation_config.VALIDATION_REPORT,
-                self.data_validation_config.VALIDATION_REPORT
+
             )
 
 

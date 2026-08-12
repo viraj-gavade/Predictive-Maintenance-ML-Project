@@ -1,0 +1,11 @@
+{
+    "validation_status": true,
+    "Expected_Columns": true,
+    "No_UnExpected_Columns": true,
+    "Target_Validation": true,
+    "DataType_Validation": true,
+    "No_Missing_Values": true,
+    "No_Duplicates": true,
+    "Valid_Categories": true,
+    "Range_Validation": true
+}

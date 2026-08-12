@@ -1,6 +1,7 @@
 from src.logger import logging
 from src.exception_handler import CustomMachineLearningException
 from src.components.data_ingestion import DataIngestion
+from src.components.data_validation import DataValidation
 import sys
 
 
@@ -11,6 +12,10 @@ class TrainingPipeline:
             ingestion_obj = DataIngestion()
             train_path , test_path = ingestion_obj.initiate_data_ingestion()
             print(f'Train Path : {train_path} \n Test Path : {test_path} ')
+            
+            validation_obj = DataValidation()
+            train_df , test_df , _ = validation_obj.initiate_data_validation(train_path,test_path)
+            print(f'Train DF : {train_df} \n Test DF : {test_df} ')
 
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
