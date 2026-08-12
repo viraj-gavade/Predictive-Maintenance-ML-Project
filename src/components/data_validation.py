@@ -73,6 +73,20 @@ class DataTranformation:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
 
+    def check_missing_values(self,df:pd.DataFrame )->dict:
+        try:
+            missing_vals_cols = {}
+            logging.info('Checking for missing values')
+            for col in df.columns:
+                if(df[col].isnull().sum()> 0 ):
+                    missing_vals_cols[col] = df[col].isnull().sum()
+                else:
+                    logging.info('No missing values found!')
+            return missing_vals_cols
+
+        except Exception as e:
+            logging.info(f'Exception Occured : {e}')
+            raise CustomMachineLearningException(e,sys)
 
     def data_type_validation(self , df:pd.DataFrame)->dict:
         try:
@@ -128,9 +142,9 @@ class DataTranformation:
             test_unexpected_cols = self.check_unexpected_cols(test_df)
 
             if(len(train_unexpected_cols)and len(test_unexpected_cols)==0):
-                self.data_tranformation_config.VALIDATION_REPORT['UnExpected_Columns'] = True
+                self.data_tranformation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['UnExpected_Columns'] = {
+                self.data_tranformation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = {
                     'Train_df': train_unexpected_cols,
                     'Test_df': test_unexpected_cols,
                 }
@@ -163,7 +177,19 @@ class DataTranformation:
                             }
             logging.info('Data type validation validation completed successfully')
 
+            logging.info('Checking for the missing values in train and test datasets')
+            train_missing_vals = self.check_missing_values(train_df)
+            test_missing_vals = self.check_missing_values(test_df)
+            
 
+            if(len(train_missing_vals)and len(test_missing_vals)==0):
+                self.data_tranformation_config.VALIDATION_REPORT['No_Missing_Values'] = True
+            else:
+                self.data_tranformation_config.VALIDATION_REPORT['No_Missing_Values'] = {
+                                'Train_df': train_missing_vals,
+                                'Test_df': test_missing_vals,
+                            }
+            logging.info('Missing values checked successfully!')
 
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
