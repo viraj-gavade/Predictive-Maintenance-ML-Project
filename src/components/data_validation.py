@@ -4,9 +4,24 @@ from dataclasses import dataclass ,field
 import os 
 import sys
 import pandas as pd
+from pydantic import BaseModel
+from typing import Dict , List
+
+class ValidationReportSchema(BaseModel):
+    validation_status : bool
+    Expected_Columns : bool | Dict[str,Dict[str,List[str]]]
+    No_UnExpected_Columns :bool | Dict[str,Dict[str,List[str]]]
+    Target_Validation:bool | Dict[str,Dict[str,bool]]
+    DataType_Validation : bool | Dict[str,Dict[str,str]]
+    No_Missing_Values : bool | Dict[str,Dict[str,int]]
+    No_Duplicates : bool | Dict[str,int]
+    Valid_Categories : bool | Dict[str,bool]
+    Range_Validation : bool | Dict[str,bool]
+
+
 
 @dataclass 
-class DataTransformationConfig:
+class DataValidationConfig:
     EXPECTED_COLS = field(default_factory=lambda:[
         'UDI','Product ID','Type','Air temperature [K]','Process temperature [K]','Rotational speed [rpm]','Torque [Nm]','Tool wear [min]',
         'Machine failure','TWF','HDF','PWF','OSF','RNF'
@@ -32,38 +47,38 @@ class DataTransformationConfig:
     "RNF": "int64"
 })
 
-class DataTranformation:
+class DataValidation:
     def __int__(self):
-        self.data_tranformation_config = DataTransformationConfig()
+        self.data_validation_config = DataValidationConfig()
 
-    def check_expected_cols(self , df : pd.DataFrame )->dict:
+    def check_expected_cols(self , df : pd.DataFrame )->list:
         try:
-            for col in self.data_tranformation_config.EXPECTED_COLS:
+            for col in self.data_validation_config.EXPECTED_COLS:
                 if(col not in df.columns):
-                    self.data_tranformation_config.MISSING_COLS.append(col)
+                    self.data_validation_config.MISSING_COLS.append(col)
                 else:
                     logging.info('All columns are present')
-            return {'missing_cols':self.data_tranformation_config.MISSING_COLS}
+            return self.data_validation_config.MISSING_COLS
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
 
 
-    def check_unexpected_cols(self , df : pd.DataFrame )->dict:
+    def check_unexpected_cols(self , df : pd.DataFrame )->list:
         try:
             for col in df.columns:
-                if(col not in self.data_tranformation_config.EXPECTED_COLS):
-                    self.data_tranformation_config.UNEXPECTED_COLS.append(col)
+                if(col not in self.data_validation_config.EXPECTED_COLS):
+                    self.data_validation_config.UNEXPECTED_COLS.append(col)
                 else:
                     logging.info('No unexpected columns present')
-            return {'missing_cols':self.data_tranformation_config.UNEXPECTED_COLS}
+            return self.data_validation_config.UNEXPECTED_COLS
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
 
     def target_validation(self , df:pd.DataFrame)->bool:
         try:
-            if self.data_tranformation_config.TARGET_VARIABLE not in df.columns:
+            if self.data_validation_config.TARGET_VARIABLE not in df.columns:
                 logging.info('Target variable not found')
                 return False
             else:
@@ -88,7 +103,7 @@ class DataTranformation:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
         
-    def check_duplicate_records(self,df:pd.DataFrame )->dict:
+    def check_duplicate_records(self,df:pd.DataFrame )->int:
         try:
             duplicates = df.duplicated().sum()
             return duplicates
@@ -100,7 +115,7 @@ class DataTranformation:
     def data_type_validation(self , df:pd.DataFrame)->dict:
         try:
             data_type_errors = {}
-            for column_name , expected_dtype in self.data_tranformation_config.EXPECTED_DTYPES.items():
+            for column_name , expected_dtype in self.data_validation_config.EXPECTED_DTYPES.items():
                 if column_name not in df.columns:
                     continue
                 actual_dtype = str(df[column_name].dtype)
@@ -171,9 +186,9 @@ class DataTranformation:
             test_missing_cols = self.check_expected_cols(test_df)
 
             if(len(train_missing_cols)and len(test_missing_cols)==0):
-                self.data_tranformation_config.VALIDATION_REPORT['Expected_Columns'] = True
+                self.data_validation_config.VALIDATION_REPORT['Expected_Columns'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['Expected_Columns'] = {
+                self.data_validation_config.VALIDATION_REPORT['Expected_Columns'] = {
                     'Train_df': train_missing_cols,
                     'Test_df': test_missing_cols,
                 }
@@ -188,9 +203,9 @@ class DataTranformation:
             test_unexpected_cols = self.check_unexpected_cols(test_df)
 
             if(len(train_unexpected_cols)and len(test_unexpected_cols)==0):
-                self.data_tranformation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = True
+                self.data_validation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = {
+                self.data_validation_config.VALIDATION_REPORT['No_UnExpected_Columns'] = {
                     'Train_df': train_unexpected_cols,
                     'Test_df': test_unexpected_cols,
                 }
@@ -201,9 +216,9 @@ class DataTranformation:
             train_target_exists = self.target_validation(train_df)
             test_target_exists = self.target_validation(test_df)
             if(train_target_exists and test_target_exists == True):
-                self.data_tranformation_config.VALIDATION_REPORT['Target_Validation'] = True
+                self.data_validation_config.VALIDATION_REPORT['Target_Validation'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['Target_Validation'] = {
+                self.data_validation_config.VALIDATION_REPORT['Target_Validation'] = {
                     'Train Target Exists': train_target_exists,
                     'Test Target Exists': test_target_exists,
                 }
@@ -215,9 +230,9 @@ class DataTranformation:
             test_dtypes_validation = self.data_type_validation(test_df)
 
             if(len(train_dtypes_validation)and len(test_dtypes_validation)==0):
-                self.data_tranformation_config.VALIDATION_REPORT['DataType_Validation'] = True
+                self.data_validation_config.VALIDATION_REPORT['DataType_Validation'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['DataType_Validation'] = {
+                self.data_validation_config.VALIDATION_REPORT['DataType_Validation'] = {
                                 'Train_df': train_dtypes_validation,
                                 'Test_df': test_dtypes_validation,
                             }
@@ -228,9 +243,9 @@ class DataTranformation:
             test_missing_vals = self.check_missing_values(test_df)
     
             if(len(train_missing_vals)and len(test_missing_vals)==0):
-                self.data_tranformation_config.VALIDATION_REPORT['No_Missing_Values'] = True
+                self.data_validation_config.VALIDATION_REPORT['No_Missing_Values'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['No_Missing_Values'] = {
+                self.data_validation_config.VALIDATION_REPORT['No_Missing_Values'] = {
                                 'Train_df': train_missing_vals,
                                 'Test_df': test_missing_vals,
                             }
@@ -242,9 +257,9 @@ class DataTranformation:
             test_duplicates = self.check_duplicate_records(test_df)
     
             if(train_duplicates and  test_duplicates==0):
-                self.data_tranformation_config.VALIDATION_REPORT['No_Duplicates'] = True
+                self.data_validation_config.VALIDATION_REPORT['No_Duplicates'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['No_Duplicates'] = {
+                self.data_validation_config.VALIDATION_REPORT['No_Duplicates'] = {
                                 'Train_df': train_duplicates,
                                 'Test_df': test_duplicates,
                             }
@@ -255,9 +270,9 @@ class DataTranformation:
             is_train_category_valid = self.category_validation(train_df)
             is_test_category_valid = self.category_validation(test_df)
             if(is_train_category_valid and is_test_category_valid == True):
-                self.data_tranformation_config.VALIDATION_REPORT['Valid_Categories'] = True
+                self.data_validation_config.VALIDATION_REPORT['Valid_Categories'] = True
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['Valid_Categories'] = {
+                self.data_validation_config.VALIDATION_REPORT['Valid_Categories'] = {
                                                 'Train_df': is_train_category_valid,
                                                 'Test_df': is_test_category_valid,
                                             }
@@ -269,17 +284,61 @@ class DataTranformation:
             test_range_validation = self.numerical_validtion(test_df)
 
             if (False in train_range_validation and test_range_validation):
-                self.data_tranformation_config.VALIDATION_REPORT['Range_Validation'] = {
+                self.data_validation_config.VALIDATION_REPORT['Range_Validation'] = {
                                                 'Train_df': train_range_validation,
                                                 'Test_df': test_range_validation,
                                             }
             else:
-                self.data_tranformation_config.VALIDATION_REPORT['Range_Validation'] = True
+                self.data_validation_config.VALIDATION_REPORT['Range_Validation'] = True
 
             logging.info('Range validation for numerical features completed successfully')
 
-            
 
+            if False in  self.data_validation_config.VALIDATION_REPORT:
+                self.data_validation_config.VALIDATION_REPORT['VALIDATION_STATUS'] = False
+            else:
+                self.data_validation_config.VALIDATION_REPORT['VALIDATION_STATUS'] = False
+
+            report = ValidationReportSchema(
+                validation_status=self.data_validation_config.VALIDATION_REPORT["validation_status"],
+                Expected_Columns=self.data_validation_config.VALIDATION_REPORT["Expected_Columns"],
+                No_UnExpected_Columns=self.data_validation_config.VALIDATION_REPORT["No_UnExpected_Columns"],
+                Target_Validation=self.data_validation_config.VALIDATION_REPORT["Target_Validation"],
+                DataType_Validation=self.data_validation_config.VALIDATION_REPORT["DataType_Validation"],
+                No_Missing_Values=self.data_validation_config.VALIDATION_REPORT["No_Missing_Values"],
+                No_Duplicates=self.data_validation_config.VALIDATION_REPORT["No_Duplicates"],
+                Valid_Categories=self.data_validation_config.VALIDATION_REPORT["Valid_Categories"],
+                Range_Validation=self.data_validation_config.VALIDATION_REPORT["Range_Validation"]
+            )
+
+            logging.info("Creating the validation reports directory")
+
+            os.makedirs(
+                os.path.dirname(
+                    self.data_validation_config.VALIDATION_REPORT
+                ),
+                exist_ok=True
+            )
+
+            logging.info(
+                f"Saving the validation report to the path: "
+                f"{self.data_validation_config.VALIDATION_REPORT}"
+            )
+
+            with open(
+                self.data_validation_config.VALIDATION_REPORT,
+                "w"
+            ) as f:
+                f.write(report.model_dump_json(indent=4))
+
+            logging.info("******** DATA VALIDATION PIPELINE COMPLETED ********")
+
+            return (
+                train_df,
+                test_df,
+                self.data_validation_config.VALIDATION_REPORT,
+                self.data_validation_config.VALIDATION_REPORT
+            )
 
 
         except Exception as e:
