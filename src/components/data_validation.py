@@ -131,6 +131,31 @@ class DataTranformation:
         except Exception as e:
             logging.info(f'Exception Occured : {e}')
             raise CustomMachineLearningException(e,sys)
+
+    def numerical_validtion(self , df:pd.DataFrame)->bool:
+        try:
+            logging.info('Validating the numerical values')
+            range_validation_report = {}
+            if(df['Air temperature [K]']< 0).any(): range_validation_report['Air temperature [K]'] = False
+            else:range_validation_report['Air temperature [K]'] = True
+
+            if(df['Process temperature [K]']< 0).any(): range_validation_report['Process temperature [K]'] = False
+            else:range_validation_report['Process temperature [K]'] = True
+
+
+            if(df['Rotational speed [rpm]']< 0).any(): range_validation_report['Rotational speed [rpm]'] = False
+            else:range_validation_report['Rotational speed [rpm]'] = True
+
+            if(df['Torque [Nm]']< 0).any(): range_validation_report['Torque [Nm]'] = False
+            else:range_validation_report['Torque [Nm]'] = True
+
+            return range_validation_report
+        
+        except Exception as e:
+            logging.info(f'Exception Occured : {e}')
+            raise CustomMachineLearningException(e,sys)
+
+        
     def initiate_data_validation(self, train_path:str , test_path:str)->dict:
         try:
             logging.info('***** PHASE 2 - Initiate Data Validation Pipeline *****')
@@ -237,7 +262,24 @@ class DataTranformation:
                                                 'Test_df': is_test_category_valid,
                                             }
             logging.info('Category validation completed successfully on train and test data')
+
+
+            logging.info('Checking the numerical validations on train and test data')
+            train_range_validation = self.numerical_validtion(train_df)
+            test_range_validation = self.numerical_validtion(test_df)
+
+            if (False in train_range_validation and test_range_validation):
+                self.data_tranformation_config.VALIDATION_REPORT['Range_Validation'] = {
+                                                'Train_df': train_range_validation,
+                                                'Test_df': test_range_validation,
+                                            }
+            else:
+                self.data_tranformation_config.VALIDATION_REPORT['Range_Validation'] = True
+
+            logging.info('Range validation for numerical features completed successfully')
+
             
+
 
 
         except Exception as e:
