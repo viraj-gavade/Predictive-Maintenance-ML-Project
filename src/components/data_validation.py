@@ -358,7 +358,7 @@ class DataValidation:
             ) as f:
                 f.write(report.model_dump_json(indent=4))
 
-            logging.info("******** DATA VALIDATION PIPELINE COMPLETED ********")
+            logging.info("******** PHASE 2 DATA VALIDATION PIPELINE COMPLETED ********")
 
             return (
                 train_df,
