@@ -33,6 +33,7 @@ class DataTransformation:
         try:
             logging.info('***** PHASE 3 - Initiate Data Transformation Pipeline *****')
             logging.info('Seperating the input features and target Variable')
+
             X_train = train_df.drop(columns=[self.data_transformation_config.TARGET_VARIABLE],axis=1)
             y_train = train_df[[self.data_transformation_config.TARGET_VARIABLE]]
 
@@ -42,16 +43,19 @@ class DataTransformation:
             logging.info(f'X_train Shape : {X_train.shape} , Y_train shape : {y_train.shape}')
             logging.info(f'X_test Shape : {X_test.shape} , Y_test shape : {y_test.shape}')
 
+            logging.info(f'Features of X_train and X_test : {X_train.columns.to_list()} , {X_test.columns.tolist()}')
+
             logging.info('Dropping the unnecessary columns and columns which can cause data leaks')
             logging.info(f'Dropping the following columns : {self.data_transformation_config.COLUMSN_TO_DROP}')
-            X_train.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
-            X_test.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
+            X_train.drop(columns=self.data_transformation_config.COLUMSN_TO_DROP,axis=1)
+            X_test.drop(columns=self.data_transformation_config.COLUMSN_TO_DROP,axis=1)
             logging.info(f'Features of X_train and X_test : {X_train.columns.to_list()} , {X_test.columns.tolist()}')
             logging.info('Uncessary columns dropped successfully')
 
 
             logging.info('Seperating the numerical and categorical features')
             for col in train_df.columns:
+                if col == 'Machine failure' : continue
                 if(train_df[col].dtype == "O"):self.data_transformation_config.CATEGORICAL_FEATURES.append(col)
                 else:self.data_transformation_config.NUMERICAL_FEATURES.append(col)
             logging.info(f'Numerical Features :  {self.data_transformation_config.NUMERICAL_FEATURES}')
