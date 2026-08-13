@@ -122,8 +122,8 @@ class DataValidation:
             for col in df.columns:
                 if(df[col].isnull().sum()> 0 ):
                     missing_vals_cols[col] = df[col].isnull().sum()
-                else:
-                    logging.info('No missing values found!')
+                
+            logging.info('No missing values found!')
             return missing_vals_cols
 
         except Exception as e:
@@ -152,7 +152,7 @@ class DataValidation:
                         'actual_dtype':actual_dtype
                     }
 
-                if(len(data_type_errors)==0):logging.info('All data types are correct')
+            if(len(data_type_errors)==0):logging.info('All data types are correct')
 
             return data_type_errors
         except Exception as e:
