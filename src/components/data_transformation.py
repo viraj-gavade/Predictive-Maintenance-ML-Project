@@ -7,6 +7,12 @@ import pandas as pd
 from pydantic import BaseModel
 from typing import Dict , List
 from typing import ClassVar
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from src.utils import save_object
 
 
 @dataclass
@@ -27,7 +33,6 @@ class DataTransformation:
         try:
             logging.info('***** PHASE 3 - Initiate Data Transformation Pipeline *****')
             logging.info('Seperating the input features and target Variable')
-
             X_train = train_df.drop(columns=[self.data_transformation_config.TARGET_VARIABLE],axis=1)
             y_train = train_df[[self.data_transformation_config.TARGET_VARIABLE]]
 
@@ -36,6 +41,13 @@ class DataTransformation:
             logging.info('Input features and target features seperated sucessfully')
             logging.info(f'X_train Shape : {X_train.shape} , Y_train shape : {y_train.shape}')
             logging.info(f'X_test Shape : {X_test.shape} , Y_test shape : {y_test.shape}')
+
+            logging.info('Dropping the unnecessary columns and columns which can cause data leaks')
+            logging.info(f'Dropping the following columns : {self.data_transformation_config.COLUMSN_TO_DROP}')
+            X_train.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
+            X_test.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
+            logging.info(f'Features of X_train and X_test : {X_train.columns.to_list()} , {X_test.columns.tolist()}')
+            logging.info('Uncessary columns dropped successfully')
 
 
             logging.info('Seperating the numerical and categorical features')
@@ -46,15 +58,6 @@ class DataTransformation:
             logging.info(f'Categorical Features :  {self.data_transformation_config.CATEGORICAL_FEATURES}')
 
             logging.info('No missing values and duplicate records in the dataset to handle')
-
-
-            logging.info('Dropping the unnecessary columns and columns which can cause data leaks')
-            logging.info(f'Dropping the following columns : {self.data_transformation_config.COLUMSN_TO_DROP}')
-            X_train.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
-            X_test.drop(columns=[self.data_transformation_config.COLUMSN_TO_DROP],axis=1,inplace=True)
-            logging.info(f'Features of X_train and X_test : {X_train.columns.to_list()} , {X_test.columns.tolist()}')
-            logging.info('Uncessary columns dropped successfully')
-
 
             logging.info('Engineering the new features On Both train and test data')
             logging.info('Create New Feature Named :-> Temperature Difference')
@@ -74,6 +77,46 @@ class DataTransformation:
             test_df["Speed Torque Ratio"] = (test_df["Rotational speed [rpm]"]/ (test_df["Torque [Nm]"] + 1e-6))
 
             logging.info('New Features created sucessfully')
+
+            logging.info('Applying the simpleImputer and Standard Scalar for numerical Features')
+            numerical_pipeline = Pipeline(steps=[ ("imputer", SimpleImputer(strategy="median")),("scaler", StandardScaler()) ])
+
+            logging.info('Applying the SimpleImputer and OneHotEncoder for categorical features')
+            categorical_pipeline = Pipeline(
+                                            steps=[
+                                                ("imputer", SimpleImputer(strategy="most_frequent")),
+                                                ("encoder", OneHotEncoder(
+                                                    handle_unknown="ignore",
+                                                    sparse_output=False
+                                                ))
+                                            ])
+
+
+            logging.info('Applying the column transformer for both the numerical and categorical pipelines')
+            preprocessor = ColumnTransformer(
+                                    transformers=[
+                                        (
+                                            "numerical_pipeline",
+                                            numerical_pipeline,
+                                            self.data_transformation_config.NUMERICAL_FEATURES
+                                        ),
+                                        (
+                                            "categorical_pipeline",
+                                            categorical_pipeline,
+                                            self.data_transformation_config.CATEGORICAL_FEATURES
+                                        )
+                                    ]
+                                )
+            logging.info('Fitting the column Transformer')
+            X_train_transformed = preprocessor.fit_transform(X_train)
+            logging.info('Saving the fitted tranformer')
+            save_object(self.data_transformation_config.preprocessor_path,preprocessor)
+            X_test_transformed = preprocessor.transform(X_test)
+            logging.info(f'X_train_transformed : {X_train_transformed.shape} ,y_train : {y_train.shape} ')
+            logging.info(f'X_test_transformed : {X_test_transformed.shape} ,y_test : {y_test.shape} ')
+
+            logging.info('*****  PHASE 3 - Data Transformation Pipeline completed Successfully *****')
+            return(X_train_transformed,y_train,X_test_transformed,y_test)
 
 
         except Exception as e:
