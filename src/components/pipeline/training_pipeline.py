@@ -3,6 +3,7 @@ from src.exception_handler import CustomMachineLearningException
 from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidation
 from src.components.data_transformation import DataTransformation
+from src.components.model_training import ModelTrainer
 import sys
 
 
@@ -20,6 +21,9 @@ class TrainingPipeline:
 
             transformation_obj = DataTransformation()
             X_train_transformed,y_train,X_test_transformed,y_test= transformation_obj.initiate_data_transformation(train_df,test_df)
+
+            model_trainer_obj = ModelTrainer()
+            model_trainer_obj.initiate_model_training(X_train_transformed,y_train,X_test_transformed,y_test)
             
 
         except Exception as e:

@@ -40,12 +40,12 @@ class DataIngestion:
             logging.info('Raw data saved to artifcats folder successfully')
 
             logging.info('Saving the train data to artifacts folder')
-            df.to_csv(self.data_ingestion_config.train_data_path,index=False)
+            train_df.to_csv(self.data_ingestion_config.train_data_path,index=False)
             logging.info('Train data saved to artifcats folder successfully')
 
 
             logging.info('Saving the test data to artifacts folder')
-            df.to_csv(self.data_ingestion_config.test_data_path,index=False)
+            test_df.to_csv(self.data_ingestion_config.test_data_path,index=False)
             logging.info('Test data saved to artifcats folder successfully')
 
             logging.info('*****  PHASE 1 - Data Ingestion Pipeline completed Successfully *****')
