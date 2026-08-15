@@ -1,2 +1,5 @@
 data/
 Logs
+Artifacts/
+mlflow.db
+mlruns/

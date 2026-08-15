@@ -8,9 +8,9 @@ from sklearn.model_selection import train_test_split
 
 @dataclass
 class DataIngestionConfig:
-    train_data_path : str = os.path.join('Artifcats/Data','train.csv')
-    test_data_path : str = os.path.join('Artifcats/Data','test.csv')
-    raw_data_path : str = os.path.join('Artifcats/Data','raw.csv')
+    train_data_path : str = os.path.join('Artifacts/Data','train.csv')
+    test_data_path : str = os.path.join('Artifacts/Data','test.csv')
+    raw_data_path : str = os.path.join('Artifacts/Data','raw.csv')
 
 
 
